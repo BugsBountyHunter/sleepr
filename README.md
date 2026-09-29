@@ -1,73 +1,68 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Sleepr
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A reservations service built as a **NestJS monorepo**. It's the first step toward a microservices architecture. The `reservations` app has full CRUD over MongoDB. It sits on a shared `common` library for configuration, database access and structured logging, which later services can reuse.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+![NestJS](https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%208-47A248?logo=mongodb&logoColor=white)
 
-## Description
+## Architecture
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
-
-```bash
-$ pnpm install
+```
+apps/
+└── reservations/          # HTTP service: controller → service → repository
+libs/
+└── common/                # Shared across every app
+    ├── config/            # @nestjs/config + Joi validation of required env vars
+    ├── database/          # Mongoose connection, AbstractDocument, AbstractRepository<T>
+    └── logger/            # nestjs-pino structured HTTP logging
 ```
 
-## Running the app
+- **Generic repository pattern.** `AbstractRepository<TDocument>` provides `create`, `find`, `findOne`, `findOneAndUpdate` and delete, with lean queries and consistent `NotFoundException` handling. Each service just extends it with its own model.
+- **Validated configuration.** The app fails fast at startup if `MONGODB_URI` is missing.
+- **Request validation.** A global `ValidationPipe` with `whitelist: true` checks DTOs using `class-validator` and `class-transformer`.
+- **Structured logging.** Pino logs every HTTP request as a single line.
 
-```bash
-# development
-$ pnpm run start
+## API
 
-# watch mode
-$ pnpm run start:dev
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/reservations` | Create a reservation |
+| `GET` | `/reservations` | List reservations |
+| `GET` | `/reservations/:id` | Get one reservation |
+| `PATCH` | `/reservations/:id` | Update a reservation |
+| `DELETE` | `/reservations/:id` | Delete a reservation |
 
-# production mode
-$ pnpm run start:prod
+Example request body:
+
+```json
+{
+  "startDate": "2026-10-01",
+  "endDate": "2026-10-05",
+  "placeId": "123",
+  "invoiceId": "493"
+}
 ```
 
-## Test
+## Getting started
+
+**Requirements:** Node.js 18+ and a running MongoDB instance.
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+npm install
+echo "MONGODB_URI=mongodb://127.0.0.1/sleepr" > .env
+npm run start:dev          # http://localhost:3000
 ```
 
-## Support
+| Script | Purpose |
+|---|---|
+| `npm run start:dev` | Run in watch mode |
+| `npm run build` | Production build (webpack) |
+| `npm test` | Unit tests (Jest) |
+| `npm run lint` | ESLint + Prettier |
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Roadmap
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+- [ ] Auth service (JWT) and a user identity on reservations
+- [ ] Payments and notifications services over a message transport
+- [ ] Docker Compose for all services
