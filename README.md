@@ -50,7 +50,7 @@ Example request body:
 
 ```bash
 npm install
-echo "MONGODB_URI=mongodb://127.0.0.1/sleepr" > .env
+cp .env.example .env         # then adjust MONGODB_URI if needed
 npm run start:dev          # http://localhost:3000
 ```
 
